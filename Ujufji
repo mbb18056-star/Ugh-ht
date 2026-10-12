@@ -1,0 +1,154 @@
+--[[
+    Level Control UI
+    สำหรับทดสอบในเกมที่คุณมีสิทธิ์ใช้งาน
+]]
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local old = playerGui:FindFirstChild("LevelControlUI")
+if old then old:Destroy() end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "LevelControlUI"
+gui.ResetOnSpawn = false
+gui.Parent = playerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.fromOffset(290, 360)
+frame.Position = UDim2.new(0.5, -145, 0.5, -180)
+frame.BackgroundColor3 = Color3.fromRGB(25, 27, 35)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = frame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -45, 0, 40)
+title.Position = UDim2.fromOffset(12, 0)
+title.BackgroundTransparency = 1
+title.Text = "LEVEL CONTROL"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 17
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = frame
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.fromOffset(30, 30)
+close.Position = UDim2.new(1, -36, 0, 5)
+close.Text = "×"
+close.TextSize = 22
+close.TextColor3 = Color3.new(1, 1, 1)
+close.BackgroundColor3 = Color3.fromRGB(180, 55, 65)
+close.Parent = frame
+Instance.new("UICorner", close).CornerRadius = UDim.new(0, 8)
+close.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
+-- ลากหน้าต่างได้
+local dragging, dragStart, startPos
+title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+    or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
+
+local y = 48
+
+local function makeButton(label, callback)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, -24, 0, 34)
+    button.Position = UDim2.fromOffset(12, y)
+    button.BackgroundColor3 = Color3.fromRGB(48, 53, 68)
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.Font = Enum.Font.Gotham
+    button.TextSize = 13
+    button.Text = label
+    button.Parent = frame
+    Instance.new("UICorner", button).CornerRadius = UDim.new(0, 7)
+    button.MouseButton1Click:Connect(function()
+        callback(button)
+    end)
+    y = y + 40
+    return button
+end
+
+local levels = {"Level 1", "Level 2", "Level 3"}
+local difficulties = {
+    "Beginner", "Easy", "Normal", "Medium", "Hard",
+    "Very Hard", "Expert", "Nightmare", "Insane",
+    "Impossible", "Extreme", "Hell", "Custom"
+}
+local speeds = {"1x", "1.5x", "2x", "3x"}
+
+local levelIndex, difficultyIndex, speedIndex = 1, 2, 1
+local autoReturn = false
+
+makeButton("Level: " .. levels[levelIndex], function(button)
+    levelIndex = levelIndex % #levels + 1
+    button.Text = "Level: " .. levels[levelIndex]
+end)
+
+makeButton("Difficulty: " .. difficulties[difficultyIndex], function(button)
+    difficultyIndex = difficultyIndex % #difficulties + 1
+    button.Text = "Difficulty: " .. difficulties[difficultyIndex]
+end)
+
+makeButton("Speed: " .. speeds[speedIndex], function(button)
+    speedIndex = speedIndex % #speeds + 1
+    button.Text = "Speed: " .. speeds[speedIndex]
+end)
+
+makeButton("Auto Return: OFF", function(button)
+    autoReturn = not autoReturn
+    button.Text = "Auto Return: " .. (autoReturn and "ON" or "OFF")
+    button.BackgroundColor3 = autoReturn
+        and Color3.fromRGB(40, 130, 85)
+        or Color3.fromRGB(48, 53, 68)
+end)
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -24, 0, 45)
+status.Position = UDim2.fromOffset(12, y)
+status.BackgroundTransparency = 1
+status.Text = "เลือกค่าจากปุ่มด้านบน"
+status.TextColor3 = Color3.fromRGB(180, 190, 210)
+status.TextWrapped = true
+status.Font = Enum.Font.Gotham
+status.TextSize = 11
+status.Parent = frame
+
+makeButton("แสดงค่าที่เลือก", function()
+    status.Text = levels[levelIndex] .. " | "
+        .. difficulties[difficultyIndex] .. " | "
+        .. speeds[speedIndex] .. " | Auto Return: "
+        .. (autoReturn and "ON" or "OFF")
+end)
